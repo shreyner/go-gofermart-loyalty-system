@@ -17,7 +17,7 @@ import (
 
 func Run(log *zap.Logger, cfg *config.Config) {
 	log.Info("Connection to database...")
-	db, err := database.New(cfg.DBUrl)
+	db, err := database.New(cfg.DBURI)
 
 	if err != nil {
 		log.Fatal("Can't connection to db", zap.Error(err))
@@ -35,7 +35,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 
 	apiMux := router.New(log)
 
-	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Port)
+	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)
 	log.Info("Staring rest api server...")
 	apiServer.Start()
 

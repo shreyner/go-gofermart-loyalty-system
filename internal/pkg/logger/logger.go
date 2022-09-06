@@ -3,9 +3,9 @@ package logger
 import (
 	"fmt"
 
-	"go-gofermart-loyalty-system/internal/config"
-
 	"go.uber.org/zap"
+
+	"go-gofermart-loyalty-system/internal/config"
 )
 
 func InitLogger(cfg *config.Config) (*zap.Logger, error) {

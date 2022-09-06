@@ -2,9 +2,7 @@ package httpserver
 
 import (
 	"context"
-	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -16,11 +14,11 @@ type HTTPServer struct {
 	log    *zap.Logger
 }
 
-func NewHttpServer(log *zap.Logger, handler http.Handler, port int) *HTTPServer {
+func NewHttpServer(log *zap.Logger, handler http.Handler, address string) *HTTPServer {
 	return &HTTPServer{
 		log: log,
 		server: http.Server{
-			Addr:    net.JoinHostPort("", strconv.Itoa(port)),
+			Addr:    address,
 			Handler: handler,
 		},
 		errors: make(chan error),
