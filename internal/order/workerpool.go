@@ -34,24 +34,26 @@ type Worker struct {
 	ID                  int
 	q                   *Queue
 	log                 *zap.Logger
-	orderService        *orderService
+	orderService        *OrderService
 	clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints
 }
 
 func (w *Worker) Loop() {
 	for job := range w.q.ch {
-		if err := w.orderService.SetProcessStatusById(job.orderNumber); err != nil {
-			w.log.Error("error change processing status for order", zap.Error(err), zap.String("orderNumber", job.orderNumber))
-			continue
-		}
-
-		if err := w.clientLoyaltyPoints.GetOrder(job.orderNumber); err != nil {
-			// TODO: Добавить смену статуса на ошибочную
-			w.log.Error("error fetch info order", zap.Error(err), zap.String("orderNumber", job.orderNumber))
-			continue
-		}
+		//if err := w.orderService.SetProcessStatusById(job.orderNumber); err != nil {
+		//	w.log.Error("error change processing status for order", zap.Error(err), zap.String("orderNumber", job.orderNumber))
+		//	continue
+		//}
+		//
+		//if err := w.clientLoyaltyPoints.GetOrder(job.orderNumber); err != nil {
+		//	// TODO: Добавить смену статуса на ошибочную
+		//	w.log.Error("error fetch info order", zap.Error(err), zap.String("orderNumber", job.orderNumber))
+		//	continue
+		//}
 
 		// TODO: Добавить проставление статуса "PROCESSED" и заполнение инфы
+
+		w.log.Info("Получил job'у и начинаю по ней работать", zap.String("orderNumber", job.orderNumber))
 
 		fmt.Println(job)
 	}
@@ -62,7 +64,7 @@ type WorkerPool struct {
 }
 
 // TODO: Реализовать обработку ошибок в worker и перезапускать
-func NewWorkerPool(log *zap.Logger, orderService *orderService, clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints, nWorker int) *WorkerPool {
+func NewWorkerPool(log *zap.Logger, orderService *OrderService, clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints, nWorker int) *WorkerPool {
 	q := NewQueue()
 
 	for i := 0; i < nWorker; i++ {

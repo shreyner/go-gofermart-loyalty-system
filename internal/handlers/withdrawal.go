@@ -151,6 +151,7 @@ func (w *WithdrawalHandlers) GetAllByUser(wr http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// TODO: Код повторяется, можно вынести в функцию
 	wr.Header().Add("Content-Type", "application/json")
 	wr.WriteHeader(http.StatusOK)
 	_, _ = wr.Write(responseBytes)

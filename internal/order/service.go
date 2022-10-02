@@ -1,48 +1,62 @@
 package order
 
-type orderService struct {
-	rep *orderRepository
+import (
+	"context"
+	"errors"
+	"go-gofermart-loyalty-system/pkg/luhn"
+	"strconv"
+)
+
+type OrderService struct {
+	rep *OrderRepository
 }
 
-func NewOrderService(rep *orderRepository) *orderService {
-	return &orderService{
+func NewOrderService(rep *OrderRepository) *OrderService {
+	return &OrderService{
 		rep: rep,
 	}
 }
 
-func (o *orderService) GetOrdersByUser(userID string) ([]*Order, error) {
-	orderEntities, err := o.rep.GetOrdersByUser(userID)
+func (o *OrderService) GetOrdersByUser(ctx context.Context, userID string) ([]*OrderEntity, error) {
+	return o.rep.GetOrdersByUser(ctx, userID)
+}
+
+func (o *OrderService) AddOrder(ctx context.Context, userID, orderNumber string) (*OrderEntity, error) {
+	orderInt, err := strconv.Atoi(orderNumber)
+
+	if err != nil {
+		return nil, ErrOrderNumberIsInvalid
+	}
+
+	if !luhn.Valid(orderInt) {
+		return nil, ErrOrderNumberIsInvalid
+	}
+
+	orderEntity, err := o.rep.Create(ctx, userID, orderNumber)
+
+	if errors.Is(err, ErrOrderIsExist) {
+		orderEntity, err := o.rep.FindByNumber(ctx, orderNumber)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if orderEntity.UserID != userID {
+			// TODO: Подумать как можно по другому обыграть ошибку с уже добавленным от другого пользователя
+			return nil, ErrOrderAlreadyExistAnotherUser
+		}
+
+		return nil, ErrOrderIsExist
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	orders := make([]*Order, 0, len(orderEntities))
-
-	for i, orderEntity := range orderEntities {
-		orders[i] = NewOrderFromEntity(orderEntity)
-	}
-
-	return orders, nil
+	return orderEntity, nil
 }
 
-func (o *orderService) AddOrder(userID, orderNumber string) (*OrderEntity, error) {
-	orderEntity := OrderEntity{
-		Number: orderNumber,
-		Status: "REGISTERED",
-		UserID: userID,
-	}
-
-	err := o.rep.Save(&orderEntity)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &orderEntity, nil
-}
-
-func (o *orderService) setStatus(orderID, newStatus string) error {
+func (o *OrderService) setStatus(orderID, newStatus string) error {
 	//orderEntity, err := o.rep.FindByID(orderID)
 	_, err := o.rep.FindByID(orderID)
 
@@ -61,8 +75,8 @@ func (o *orderService) setStatus(orderID, newStatus string) error {
 	return nil
 }
 
-func (o *orderService) SetProcessStatusById(orderID string) error {
-	err := o.setStatus(orderID, "PROCESSING")
+func (o *OrderService) SetProcessStatusById(orderID string) error {
+	err := o.setStatus(orderID, StatusOrderProcessing)
 
 	return err
 }

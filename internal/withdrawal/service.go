@@ -59,11 +59,5 @@ func (s *WithdrawalService) Create(ctx context.Context, userID string, order str
 }
 
 func (s *WithdrawalService) GetAllByUser(ctx context.Context, userID string) ([]*WithdrawalEntity, error) {
-	withdrawals, err := s.rep.FindAllByUser(ctx, userID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return withdrawals, nil
+	return s.rep.FindAllByUser(ctx, userID)
 }
