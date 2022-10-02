@@ -3,16 +3,21 @@ package gophermart
 import (
 	"context"
 	"database/sql"
+	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"go.uber.org/zap"
 
+	"go-gofermart-loyalty-system/internal/auth"
+	"go-gofermart-loyalty-system/internal/balance"
 	"go-gofermart-loyalty-system/internal/config"
+	"go-gofermart-loyalty-system/internal/order"
 	"go-gofermart-loyalty-system/internal/pkg/database"
 	"go-gofermart-loyalty-system/internal/pkg/httpserver"
 	"go-gofermart-loyalty-system/internal/router"
+	"go-gofermart-loyalty-system/internal/user"
 )
 
 func Run(log *zap.Logger, cfg *config.Config) {
@@ -33,7 +38,25 @@ func Run(log *zap.Logger, cfg *config.Config) {
 
 	log.Info("Staring the application...")
 
-	apiMux := router.New(log)
+	// Repositories
+	userRepository := user.NewUserRepository(db)
+	balanceRepository := balance.NewBalanceRepository(db)
+	orderRepository := order.NewBalanceRepository(db)
+
+	// Services
+	userService := user.NewUserService(userRepository)
+	balanceService := balance.NewBalanceService(balanceRepository)
+	orderService := order.NewOrderService(orderRepository)
+	authService := auth.NewAuthService(userService, balanceService)
+
+	orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
+	// TODO: определить порядок defer. На случай завершения connection к базе раньше чем очистится очередь
+	defer orderWorkerPool.Stop()
+	asyncProcessingOrder := order.NewAsyncProcessingOrder(orderService, orderWorkerPool)
+
+	apiMux := router.New(
+		log,
+	)
 
 	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)
 	log.Info("Staring rest api server...")
