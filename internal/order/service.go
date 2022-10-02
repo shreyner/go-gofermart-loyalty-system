@@ -56,27 +56,47 @@ func (o *OrderService) AddOrder(ctx context.Context, userID, orderNumber string)
 	return orderEntity, nil
 }
 
-func (o *OrderService) setStatus(orderID, newStatus string) error {
-	//orderEntity, err := o.rep.FindByID(orderID)
-	_, err := o.rep.FindByID(orderID)
+func (o *OrderService) setStatus(ctx context.Context, orderNumber, newStatus string) error {
+	//orderEntity, err := o.rep.FindByID(orderNumber)
+	//_, err := o.rep.FindByID(orderNumber)
 
-	if err != nil {
-		return err
-	}
+	//if err != nil {
+	//	return err
+	//}
 
 	// TODO: реализация конечного автомата для смены статуса
 	// Или подумать и перенести его как метод в сущность OrderEntity.
 	// Тогда мы сможем это сделать прямо в repository и в транзакционном формате
 
-	if err := o.rep.UpdateStatus(orderID, newStatus); err != nil {
+	if err := o.rep.UpdateStatusByOrderNumber(ctx, orderNumber, newStatus); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (o *OrderService) SetProcessStatusById(orderID string) error {
-	err := o.setStatus(orderID, StatusOrderProcessing)
+func (o *OrderService) setStatusAndAccrual(ctx context.Context, orderNumber string, accrual int) error {
+	if err := o.rep.UpdateStatusAndAccuralByOrderNumber(ctx, orderNumber, StatusOrderProcessed, accrual); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *OrderService) SetProcessingStatusByNumber(ctx context.Context, orderNumber string) error {
+	err := o.setStatus(ctx, orderNumber, StatusOrderProcessing)
+
+	return err
+}
+
+func (o *OrderService) SetInvalidStatusByNumber(ctx context.Context, orderNumber string) error {
+	err := o.setStatus(ctx, orderNumber, StatusOrderInvalid)
+
+	return err
+}
+
+func (o *OrderService) SetProcessedStatusByNumber(ctx context.Context, orderNumber string, accrual int) error {
+	err := o.setStatusAndAccrual(ctx, orderNumber, accrual)
 
 	return err
 }

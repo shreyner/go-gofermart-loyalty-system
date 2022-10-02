@@ -24,7 +24,6 @@ func New(
 ) *chi.Mux {
 	log.Info("Initilize REST API")
 
-	userHandlers := handlers.NewUsersHandlers(log)
 	authHandlers := handlers.NewAuthHandlers(log, authService)
 	balanceHandlers := handlers.NewBalanceHandlers(log, balanceService)
 	withdrawalHandlers := handlers.NewWithdrawalHandlers(log, withdrawalService)
@@ -36,9 +35,6 @@ func New(
 	r.Use(chiMiddleware.RealIP)
 	r.Use(middlewares.NewStructuredLogger(log))
 	r.Use(chiMiddleware.Recoverer)
-
-	r.Get("/", Index)
-	r.Get("/me", userHandlers.GetMe)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {

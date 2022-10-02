@@ -46,6 +46,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 
 	// Initialize DataBase schemas
 	log.Info("Start initialize database schemas ...")
+
 	err = database.InitSchemas(
 		context.Background(),
 		db,
@@ -54,6 +55,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 		orderRepository,
 		withdrawalRepository,
 	)
+
 	log.Info("Finish initialize database schemas")
 
 	if err != nil {
@@ -62,6 +64,18 @@ func Run(log *zap.Logger, cfg *config.Config) {
 		os.Exit(1)
 	}
 
+	//log.Info("Request test ...")
+	//
+	//log.Info(cfg.AccrualSystemAddress.String())
+	//
+	client := client_loyalty_points.NewClientLoyaltyPoints(log, cfg.AccrualSystemAddress.String())
+	//
+	//response, err := client.GetOrder(context.Background(), "12345678903")
+	//log.Error("client err", zap.Error(err))
+	//fmt.Println(response)
+	//
+	//log.Info("Request test end ...")
+
 	// Services
 	userService := user.NewUserService(userRepository)
 	balanceService := balance.NewBalanceService(balanceRepository)
@@ -69,7 +83,12 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	authService := auth.NewAuthService(userService, balanceService)
 	withdrawalService := withdrawal.NewWithdrawalService(log, withdrawalRepository, balanceService)
 
-	orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
+	orderWorkerPool := order.NewWorkerPool(
+		log,
+		orderService,
+		client,
+		5,
+	)
 	asyncProcessingOrderService := order.NewAsyncProcessingOrderService(orderService, orderWorkerPool)
 
 	apiMux := router.New(
