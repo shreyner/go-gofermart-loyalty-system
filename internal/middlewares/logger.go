@@ -13,7 +13,7 @@ type StructuredLogger struct {
 	Logger *zap.Logger
 }
 
-func (s *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry { //nolint:ireturn
+func (s *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 	entry := &StructuredLoggerEntry{Logger: s.Logger.Named("Http Request")}
 	fields := make([]zap.Field, 0)
 

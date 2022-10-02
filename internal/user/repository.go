@@ -1,7 +1,12 @@
 package user
 
 import (
+	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 )
 
 type userRepository struct {
@@ -14,10 +19,72 @@ func NewUserRepository(db *sql.DB) *userRepository {
 	}
 }
 
-func (u *userRepository) Create(user UserEntity) error {
+func (u *userRepository) InitSchema(ctx context.Context) error {
+	_, err := u.db.ExecContext(
+		ctx,
+		`
+		create table if not exists users
+			(
+				id       uuid default gen_random_uuid() not null constraint users_pk unique primary key,
+				login    varchar                        not null unique,
+				password varchar                        not null
+			);
+		`,
+	)
+
+	return err
+}
+
+func (u *userRepository) Create(ctx context.Context, user *UserEntity) error {
+	row := u.db.QueryRowContext(
+		ctx,
+		`insert into users (login, password) values ($1, $2) returning id;`,
+		user.Login,
+		user.password,
+	)
+
+	if row.Err() != nil {
+		var pgErr *pgconn.PgError
+
+		if !errors.As(row.Err(), &pgErr) {
+			return row.Err()
+		}
+
+		if pgErr.Code == pgerrcode.UniqueViolation && pgErr.ConstraintName == "users_login_key" {
+			return fmt.Errorf("%q: %w", user.Login, ErrLoginAlreadyExist)
+		}
+
+		return row.Err()
+	}
+
+	if err := row.Scan(&user.ID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (u *userRepository) FindByLogin(login string) *UserEntity {
-	return &UserEntity{ID: "1", Login: login}
+func (u *userRepository) FindByLogin(ctx context.Context, login string) (*UserEntity, error) {
+	row := u.db.QueryRowContext(
+		ctx,
+		`select id, login, password from users where login = $1 limit 1;`,
+		login,
+	)
+
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	user := UserEntity{}
+
+	err := row.Scan(&user.ID, &user.Login, &user.password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
 }

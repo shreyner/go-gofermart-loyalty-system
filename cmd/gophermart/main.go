@@ -25,5 +25,4 @@ func main() {
 	defer log.Sync()
 
 	gophermart.Run(log, cfg)
-
 }

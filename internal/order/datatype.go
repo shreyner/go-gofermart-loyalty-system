@@ -19,7 +19,7 @@ func NewOrderFromEntity(orderEntity *OrderEntity) *Order {
 type OrderEntity struct {
 	ID        string
 	Number    string
-	Status    string
+	Status    string // TODO: Как типизировать enum
 	Accrual   string
 	CreatedAt string
 	UserID    string
