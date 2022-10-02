@@ -43,7 +43,8 @@ func (o *orderService) AddOrder(userID, orderNumber string) (*OrderEntity, error
 }
 
 func (o *orderService) setStatus(orderID, newStatus string) error {
-	orderEntity, err := o.rep.FindByID(orderID)
+	//orderEntity, err := o.rep.FindByID(orderID)
+	_, err := o.rep.FindByID(orderID)
 
 	if err != nil {
 		return err

@@ -3,14 +3,12 @@ package gophermart
 import (
 	"context"
 	"database/sql"
-	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
+	"go-gofermart-loyalty-system/internal/auth"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"go.uber.org/zap"
-
-	"go-gofermart-loyalty-system/internal/auth"
 	"go-gofermart-loyalty-system/internal/balance"
 	"go-gofermart-loyalty-system/internal/config"
 	"go-gofermart-loyalty-system/internal/order"
@@ -18,6 +16,7 @@ import (
 	"go-gofermart-loyalty-system/internal/pkg/httpserver"
 	"go-gofermart-loyalty-system/internal/router"
 	"go-gofermart-loyalty-system/internal/user"
+	"go-gofermart-loyalty-system/internal/withdrawal"
 )
 
 func Run(log *zap.Logger, cfg *config.Config) {
@@ -42,20 +41,89 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	userRepository := user.NewUserRepository(db)
 	balanceRepository := balance.NewBalanceRepository(db)
 	orderRepository := order.NewBalanceRepository(db)
+	withdrawalRepository := withdrawal.NewWithdrawalRepository(db)
+
+	// Initialize DataBase schemas
+	log.Info("Start initialize database schemas ...")
+	err = database.InitSchemas(
+		context.Background(),
+		db,
+		userRepository,
+		balanceRepository,
+		orderRepository,
+		withdrawalRepository,
+	)
+	log.Info("Finish initialize database schemas")
+
+	if err != nil {
+		log.Fatal("Can't initialize db schema", zap.Error(err))
+
+		os.Exit(1)
+	}
+
+	//log.Info("Start insert user")
+	//userEntity := user.UserEntity{Login: "alex4"}
+	//_ = userEntity.SetPassword("1235")
+	//err = userRepository.Create(context.Background(), &userEntity)
+	//if err != nil {
+	//	if errors.Is(err, user.ErrLoginAlreadyExist) {
+	//		log.Info("this error is user already exists", zap.Error(err))
+	//	} else {
+	//		log.Error("can't create user", zap.Error(err))
+	//	}
+	//} else {
+	//	log.Info("Success created user")
+	//	fmt.Println(userEntity)
+	//}
+	//log.Info("Finished insert user")
+	//
+	//log.Info("Find user")
+	//userEntity2, err := userRepository.FindByLogin(context.Background(), "alex5")
+	//
+	//if err != nil {
+	//	if errors.Is(err, user.ErrUserNotFound) {
+	//		log.Info("Current user not found")
+	//	} else {
+	//		log.Error("unknown error FindByLogin", zap.Error(err))
+	//	}
+	//
+	//} else {
+	//	log.Info("User fined ")
+	//	fmt.Println(userEntity2)
+	//}
+	//
+	//if err := balanceRepository.Create(context.Background(), "51a7be8f-985e-4312-9b48-452e31c4efc9"); err != nil {
+	//	log.Error("Error created", zap.Error(err))
+	//} else {
+	//	log.Info("Success Created")
+	//}
+	//
+	//balanceEntity, err := balanceRepository.FindByUser(context.Background(), "51a7be8f-985e-4312-9b48-452e31c4efc9")
+	//if err != nil {
+	//	if errors.Is(err, balance.ErrBalanceNotFound) {
+	//		log.Warn("Error not found")
+	//	} else {
+	//		log.Error("unknown error", zap.Error(err))
+	//	}
+	//} else {
+	//	log.Info("finded blance")
+	//	fmt.Println(balanceEntity)
+	//}
 
 	// Services
 	userService := user.NewUserService(userRepository)
 	balanceService := balance.NewBalanceService(balanceRepository)
-	orderService := order.NewOrderService(orderRepository)
+	//orderService := order.NewOrderService(orderRepository)
 	authService := auth.NewAuthService(userService, balanceService)
 
-	orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
-	// TODO: определить порядок defer. На случай завершения connection к базе раньше чем очистится очередь
-	defer orderWorkerPool.Stop()
-	asyncProcessingOrder := order.NewAsyncProcessingOrder(orderService, orderWorkerPool)
+	//orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
+	//// TODO: определить порядок defer. На случай завершения connection к базе раньше чем очистится очередь
+	//defer orderWorkerPool.Stop()
+	//asyncProcessingOrder := order.NewAsyncProcessingOrder(orderService, orderWorkerPool)
 
 	apiMux := router.New(
 		log,
+		authService,
 	)
 
 	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)
