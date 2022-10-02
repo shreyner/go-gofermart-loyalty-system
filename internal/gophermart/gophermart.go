@@ -41,7 +41,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	userRepository := user.NewUserRepository(db)
 	balanceRepository := balance.NewBalanceRepository(db)
 	orderRepository := order.NewBalanceRepository(db)
-	withdrawalRepository := withdrawal.NewWithdrawalRepository(db)
+	withdrawalRepository := withdrawal.NewWithdrawalRepository(log, db)
 
 	// Initialize DataBase schemas
 	log.Info("Start initialize database schemas ...")
@@ -115,6 +115,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	balanceService := balance.NewBalanceService(balanceRepository)
 	//orderService := order.NewOrderService(orderRepository)
 	authService := auth.NewAuthService(userService, balanceService)
+	withdrawalService := withdrawal.NewWithdrawalService(log, withdrawalRepository, balanceService)
 
 	//orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
 	//// TODO: определить порядок defer. На случай завершения connection к базе раньше чем очистится очередь
@@ -124,6 +125,8 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	apiMux := router.New(
 		log,
 		authService,
+		balanceService,
+		withdrawalService,
 	)
 
 	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)

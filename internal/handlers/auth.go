@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go-gofermart-loyalty-system/internal/pkg/jwtauth"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go-gofermart-loyalty-system/internal/auth"
+	"go-gofermart-loyalty-system/internal/pkg/jwtauth"
 	"go-gofermart-loyalty-system/internal/user"
 )
 
@@ -25,7 +26,7 @@ func NewAuthHandlers(log *zap.Logger, service *auth.AuthService) *AuthHandlers {
 	}
 }
 
-type RegistryUserDTO struct {
+type RequestRegistryUserDTO struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
@@ -41,9 +42,10 @@ func (h *AuthHandlers) Registry(wr http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var registryUserDTO *RegistryUserDTO
+	var registryUserDTO *RequestRegistryUserDTO
 
 	if err := json.Unmarshal(bytes, &registryUserDTO); err != nil {
+		// TODO: Подумать и может обработать ошибку не валидного JSON как BadRequest
 		h.log.Error("can't read all bytes from body", zap.Error(err))
 		http.Error(wr, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
@@ -86,7 +88,7 @@ func (h *AuthHandlers) Registry(wr http.ResponseWriter, r *http.Request) {
 	wr.WriteHeader(http.StatusOK)
 }
 
-type LoginUserDTO struct {
+type RequestLoginUserDTO struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
@@ -102,7 +104,7 @@ func (h *AuthHandlers) Login(wr http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var loginUserDTO *LoginUserDTO
+	var loginUserDTO *RequestLoginUserDTO
 
 	if err := json.Unmarshal(bytes, &loginUserDTO); err != nil {
 		h.log.Error("can't read all bytes from body", zap.Error(err))
