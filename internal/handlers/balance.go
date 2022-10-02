@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -24,8 +25,8 @@ func NewBalanceHandlers(log *zap.Logger, service *balance.BalanceService) *Balan
 }
 
 type ResponseBalanceDTO struct {
-	Current   int `json:"current"`
-	Withdrawn int `json:"withdrawn"`
+	Current   json.Number `json:"current"`
+	Withdrawn json.Number `json:"withdrawn"`
 }
 
 func (h *BalanceHandlers) GetUserBalance(wr http.ResponseWriter, r *http.Request) {
@@ -45,9 +46,11 @@ func (h *BalanceHandlers) GetUserBalance(wr http.ResponseWriter, r *http.Request
 		return
 	}
 
+	//orderResponse.Accrual = json.Number(strconv.FormatFloat(float64(orderEntity.Accrual.Int64)/100, 'E', -1, 64))
+
 	responseBalanceDTO := ResponseBalanceDTO{
-		Current:   b.Current,
-		Withdrawn: b.Withdrawn,
+		Current:   json.Number(strconv.FormatFloat(float64(b.Current)/100, 'f', 2, 64)),
+		Withdrawn: json.Number(strconv.FormatFloat(float64(b.Withdrawn)/100, 'f', 2, 64)),
 	}
 
 	balanceResponse, err := json.Marshal(responseBalanceDTO)

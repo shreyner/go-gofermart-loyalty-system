@@ -89,7 +89,7 @@ func (h *OrdersHandlers) GetAllByUser(wr http.ResponseWriter, r *http.Request) {
 
 		if orderEntity.Accrual.Valid {
 			// TODO: Сделать из этого памятку
-			orderResponse.Accrual = json.Number(strconv.FormatInt(orderEntity.Accrual.Int64, 10))
+			orderResponse.Accrual = json.Number(strconv.FormatFloat(float64(orderEntity.Accrual.Int64)/100, 'f', 2, 64))
 		}
 
 		orders = append(orders, orderResponse)

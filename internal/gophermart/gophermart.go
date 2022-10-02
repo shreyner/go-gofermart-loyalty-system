@@ -86,6 +86,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	orderWorkerPool := order.NewWorkerPool(
 		log,
 		orderService,
+		balanceService,
 		client,
 		5,
 	)

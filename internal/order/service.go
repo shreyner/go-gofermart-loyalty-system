@@ -21,6 +21,10 @@ func (o *OrderService) GetOrdersByUser(ctx context.Context, userID string) ([]*O
 	return o.rep.GetOrdersByUser(ctx, userID)
 }
 
+func (o *OrderService) GetOrderByNumber(ctx context.Context, number string) (*OrderEntity, error) {
+	return o.rep.FindByNumber(ctx, number)
+}
+
 func (o *OrderService) AddOrder(ctx context.Context, userID, orderNumber string) (*OrderEntity, error) {
 	orderInt, err := strconv.Atoi(orderNumber)
 
@@ -75,7 +79,7 @@ func (o *OrderService) setStatus(ctx context.Context, orderNumber, newStatus str
 	return nil
 }
 
-func (o *OrderService) setStatusAndAccrual(ctx context.Context, orderNumber string, accrual int) error {
+func (o *OrderService) setStatusAndAccrual(ctx context.Context, orderNumber string, accrual float64) error {
 	if err := o.rep.UpdateStatusAndAccuralByOrderNumber(ctx, orderNumber, StatusOrderProcessed, accrual); err != nil {
 		return err
 	}
@@ -95,7 +99,7 @@ func (o *OrderService) SetInvalidStatusByNumber(ctx context.Context, orderNumber
 	return err
 }
 
-func (o *OrderService) SetProcessedStatusByNumber(ctx context.Context, orderNumber string, accrual int) error {
+func (o *OrderService) SetProcessedStatusByNumber(ctx context.Context, orderNumber string, accrual float64) error {
 	err := o.setStatusAndAccrual(ctx, orderNumber, accrual)
 
 	return err

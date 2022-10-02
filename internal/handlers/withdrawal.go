@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -27,8 +28,8 @@ func NewWithdrawalHandlers(log *zap.Logger, service *withdrawal.WithdrawalServic
 }
 
 type RequestCreateWithdrawalDTO struct {
-	Order string `json:"order"`
-	Sum   int    `json:"sum"`
+	Order string      `json:"order"`
+	Sum   json.Number `json:"sum"`
 }
 
 func (w *WithdrawalHandlers) CreateWithdrawal(wr http.ResponseWriter, r *http.Request) {
@@ -55,7 +56,14 @@ func (w *WithdrawalHandlers) CreateWithdrawal(wr http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = w.service.Create(r.Context(), jwtData.ID, requestCreateWithdrawalDTO.Order, requestCreateWithdrawalDTO.Sum)
+	sumFloat64, err := requestCreateWithdrawalDTO.Sum.Float64()
+
+	if err != nil {
+		w.log.Error("can't converted sum", zap.Error(err), zap.String("sum", string(requestCreateWithdrawalDTO.Sum)))
+		http.Error(wr, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	err = w.service.Create(r.Context(), jwtData.ID, requestCreateWithdrawalDTO.Order, int(sumFloat64*100))
 
 	if err != nil {
 		if errors.Is(err, withdrawal.ErrWithdrawalOrderNumberIsInvalid) {
@@ -87,9 +95,9 @@ func (w *WithdrawalHandlers) CreateWithdrawal(wr http.ResponseWriter, r *http.Re
 }
 
 type ResponseWithdrawalsDTO struct {
-	Order       string    `json:"order"`
-	Sum         int       `json:"sum"`
-	ProcessedAt time.Time `json:"processed_at"`
+	Order       string      `json:"order"`
+	Sum         json.Number `json:"sum"`
+	ProcessedAt time.Time   `json:"processed_at"`
 }
 
 func (w ResponseWithdrawalsDTO) MarshalJSON() ([]byte, error) {
@@ -135,7 +143,7 @@ func (w *WithdrawalHandlers) GetAllByUser(wr http.ResponseWriter, r *http.Reques
 	for _, withdrawalEntity := range withdrawals {
 		responseWithdrawal := ResponseWithdrawalsDTO{
 			Order:       withdrawalEntity.OrderNumber,
-			Sum:         withdrawalEntity.Sum,
+			Sum:         json.Number(strconv.FormatFloat(float64(withdrawalEntity.Sum)/100, 'f', 2, 64)),
 			ProcessedAt: withdrawalEntity.CreatedAt,
 		}
 

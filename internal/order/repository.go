@@ -183,14 +183,14 @@ func (o *OrderRepository) UpdateStatusAndAccuralByOrderNumber(
 	ctx context.Context,
 	number,
 	newStatus string,
-	accural int,
+	accural float64,
 ) error {
 	_, err := o.db.ExecContext(
 		ctx,
 		`update orders set status = $1, accrual = $3 where number = $2`,
 		newStatus,
 		number,
-		accural,
+		int(accural*100), // TODO: Hot fix and need refactoring
 	)
 
 	if err != nil {

@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"go-gofermart-loyalty-system/internal/balance"
 	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
 	"go.uber.org/zap"
 	"time"
@@ -35,6 +36,7 @@ type Worker struct {
 	ID                  int
 	q                   *Queue
 	log                 *zap.Logger
+	balanceService      *balance.BalanceService
 	orderService        *OrderService
 	clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints
 }
@@ -90,7 +92,8 @@ func (w *Worker) Loop() {
 
 		if response.Status == client_loyalty_points.ClientResponseOrderStatusProcessed {
 			w.log.Info("order processed in external system", zap.String("orderNumber", job.orderNumber))
-			accuralInt64, err := response.Accrual.Int64()
+
+			accuralFloat64, err := response.Accrual.Float64()
 
 			if err != nil {
 				w.log.Error(
@@ -105,7 +108,7 @@ func (w *Worker) Loop() {
 			err = w.orderService.SetProcessedStatusByNumber(
 				ctx,
 				job.orderNumber,
-				int(accuralInt64),
+				accuralFloat64,
 			)
 
 			if err != nil {
@@ -113,6 +116,20 @@ func (w *Worker) Loop() {
 
 				return
 			}
+
+			// TODO: Need add try counter
+			// TODO: Need refactoring
+			order, _ := w.orderService.GetOrderByNumber(ctx, job.orderNumber)
+
+			err = w.balanceService.Accrue(ctx, order.UserID, int(accuralFloat64*100))
+
+			if err != nil {
+				w.log.Error("can't user balance", zap.String("userId", order.UserID))
+
+				return
+			}
+
+			w.log.Info("finished order", zap.String("orderNumber", job.orderNumber))
 
 			return
 		}
@@ -124,7 +141,7 @@ type WorkerPool struct {
 }
 
 // TODO: Реализовать обработку ошибок в worker и перезапускать
-func NewWorkerPool(log *zap.Logger, orderService *OrderService, clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints, nWorker int) *WorkerPool {
+func NewWorkerPool(log *zap.Logger, orderService *OrderService, balanceService *balance.BalanceService, clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints, nWorker int) *WorkerPool {
 	q := NewQueue()
 
 	for i := 0; i < nWorker; i++ {
@@ -134,6 +151,7 @@ func NewWorkerPool(log *zap.Logger, orderService *OrderService, clientLoyaltyPoi
 			log:                 log.With(zap.Int("workerID", i)),
 			orderService:        orderService,
 			clientLoyaltyPoints: clientLoyaltyPoints,
+			balanceService:      balanceService,
 		}
 
 		go worker.Loop()

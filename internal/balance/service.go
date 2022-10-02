@@ -31,6 +31,10 @@ func (b *BalanceService) GetByUserID(ctx context.Context, userID string) (*Balan
 	return balance, nil
 }
 
+func (b *BalanceService) Accrue(ctx context.Context, userID string, amount int) error {
+	return b.rep.Accrue(ctx, userID, amount)
+}
+
 func (b *BalanceService) Withdraw(ctx context.Context, userID string, amount int) error {
 	return b.rep.Withdraw(ctx, userID, amount)
 }
