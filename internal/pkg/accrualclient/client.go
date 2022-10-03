@@ -1,4 +1,4 @@
-package client_loyalty_points
+package accrualclient
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type ClientLoyaltyPoints struct {
+type AccrualClient struct {
 	log        *zap.Logger
 	address    string
 	httpClient *http.Client
 }
 
-func NewClientLoyaltyPoints(log *zap.Logger, address string) *ClientLoyaltyPoints {
-	return &ClientLoyaltyPoints{
+func NewAccrualClient(log *zap.Logger, address string) *AccrualClient {
+	return &AccrualClient{
 		log:        log,
 		address:    address,
 		httpClient: &http.Client{},
@@ -35,7 +35,7 @@ type ClientResponseOrderDTO struct {
 	Accrual json.Number `json:"accrual,omitempty"`
 }
 
-func (c *ClientLoyaltyPoints) GetOrder(ctx context.Context, orderNumber string) (*ClientResponseOrderDTO, error) {
+func (c *AccrualClient) GetOrder(ctx context.Context, orderNumber string) (*ClientResponseOrderDTO, error) {
 	request, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,

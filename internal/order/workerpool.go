@@ -3,7 +3,7 @@ package order
 import (
 	"context"
 	"go-gofermart-loyalty-system/internal/balance"
-	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
+	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/accrualclient"
 	"go.uber.org/zap"
 	"time"
 )
@@ -38,7 +38,7 @@ type Worker struct {
 	log                 *zap.Logger
 	balanceService      *balance.BalanceService
 	orderService        *OrderService
-	clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints
+	clientLoyaltyPoints *client_loyalty_points.AccrualClient
 }
 
 func (w *Worker) Loop() {
@@ -141,7 +141,7 @@ type WorkerPool struct {
 }
 
 // TODO: Реализовать обработку ошибок в worker и перезапускать
-func NewWorkerPool(log *zap.Logger, orderService *OrderService, balanceService *balance.BalanceService, clientLoyaltyPoints *client_loyalty_points.ClientLoyaltyPoints, nWorker int) *WorkerPool {
+func NewWorkerPool(log *zap.Logger, orderService *OrderService, balanceService *balance.BalanceService, clientLoyaltyPoints *client_loyalty_points.AccrualClient, nWorker int) *WorkerPool {
 	q := NewQueue()
 
 	for i := 0; i < nWorker; i++ {

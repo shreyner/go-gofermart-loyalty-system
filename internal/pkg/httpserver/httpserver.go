@@ -14,7 +14,7 @@ type HTTPServer struct {
 	log    *zap.Logger
 }
 
-func NewHttpServer(log *zap.Logger, handler http.Handler, address string) *HTTPServer {
+func NewHTTPServer(log *zap.Logger, handler http.Handler, address string) *HTTPServer {
 	return &HTTPServer{
 		log: log,
 		server: http.Server{

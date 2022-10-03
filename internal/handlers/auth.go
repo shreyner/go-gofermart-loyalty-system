@@ -130,7 +130,7 @@ func (h *AuthHandlers) Login(wr http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := jwtauth.CreateJwtToken(&jwtauth.JwtData{ID: u.ID})
+	tokenString, _ := jwtauth.CreateJwtToken(&jwtauth.JwtData{ID: u.ID})
 
 	// TODO: Need refactoring and move to pkg/jwtauth
 	authCookie := http.Cookie{

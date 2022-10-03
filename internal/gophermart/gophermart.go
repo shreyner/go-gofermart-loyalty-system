@@ -12,7 +12,7 @@ import (
 	"go-gofermart-loyalty-system/internal/balance"
 	"go-gofermart-loyalty-system/internal/config"
 	"go-gofermart-loyalty-system/internal/order"
-	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
+	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/accrualclient"
 	"go-gofermart-loyalty-system/internal/pkg/database"
 	"go-gofermart-loyalty-system/internal/pkg/httpserver"
 	"go-gofermart-loyalty-system/internal/router"
@@ -68,7 +68,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	//
 	//log.Info(cfg.AccrualSystemAddress.String())
 	//
-	client := client_loyalty_points.NewClientLoyaltyPoints(log, cfg.AccrualSystemAddress.String())
+	client := client_loyalty_points.NewAccrualClient(log, cfg.AccrualSystemAddress.String())
 	//
 	//response, err := client.GetOrder(context.Background(), "12345678903")
 	//log.Error("client err", zap.Error(err))
@@ -101,7 +101,7 @@ func Run(log *zap.Logger, cfg *config.Config) {
 		asyncProcessingOrderService,
 	)
 
-	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)
+	apiServer := httpserver.NewHTTPServer(log, apiMux, cfg.Address)
 	log.Info("Staring rest api server...")
 	apiServer.Start()
 
