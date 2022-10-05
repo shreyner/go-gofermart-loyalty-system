@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"net/url"
 
 	"github.com/caarlos0/env/v6"
@@ -18,19 +17,21 @@ type Config struct {
 }
 
 func (c *Config) Parse() error {
-	address := flag.String("a", c.Address, "адрес и порт запуска сервиса")
-	DbURI := flag.String("d", c.DBURI, "адрес подключения к базе данных")
-	accrualSystemAddress := flag.String("r", c.AccrualSystemAddress.String(), "адрес системы расчёта начислений")
+	//address := flag.String("a", c.Address, "адрес и порт запуска сервиса")
+	//DbURI := flag.String("d", c.DBURI, "адрес подключения к базе данных")
+	//accrualSystemAddress := flag.String("r", c.AccrualSystemAddress.String(), "адрес системы расчёта начислений")
 
-	opt := env.Options{
-		Environment: map[string]string{
-			"RUN_ADDRESS":            *address,
-			"DATABASE_URI":           *DbURI,
-			"ACCRUAL_SYSTEM_ADDRESS": *accrualSystemAddress,
-		},
-	}
+	//flag.Parse()
 
-	if err := env.Parse(c, opt); err != nil {
+	//opt := env.Options{
+	//Environment: map[string]string{
+	//	"RUN_ADDRESS":            *address,
+	//	"DATABASE_URI":           *DbURI,
+	//	"ACCRUAL_SYSTEM_ADDRESS": *accrualSystemAddress,
+	//},
+	//}
+
+	if err := env.Parse(c); err != nil {
 		return err
 	}
 

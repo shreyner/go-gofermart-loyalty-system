@@ -1,21 +1,23 @@
 package balance
 
-type balanceService struct {
+import "context"
+
+type BalanceService struct {
 	rep *balanceRepository
 }
 
-func NewBalanceService(rep *balanceRepository) *balanceService {
-	return &balanceService{
+func NewBalanceService(rep *balanceRepository) *BalanceService {
+	return &BalanceService{
 		rep: rep,
 	}
 }
 
-func (b *balanceService) CreateByUserID(userID string) error {
-	return b.rep.Create(userID)
+func (b *BalanceService) CreateByUserID(ctx context.Context, userID string) error {
+	return b.rep.Create(ctx, userID)
 }
 
-func (b *balanceService) GetByUserID(userID string) (*Balance, error) {
-	balanceEntity, err := b.rep.FindByUser(userID)
+func (b *BalanceService) GetByUserID(ctx context.Context, userID string) (*Balance, error) {
+	balanceEntity, err := b.rep.FindByUser(ctx, userID)
 
 	if err != nil {
 		return nil, err
@@ -27,4 +29,12 @@ func (b *balanceService) GetByUserID(userID string) (*Balance, error) {
 	}
 
 	return balance, nil
+}
+
+func (b *BalanceService) Accrue(ctx context.Context, userID string, amount int) error {
+	return b.rep.Accrue(ctx, userID, amount)
+}
+
+func (b *BalanceService) Withdraw(ctx context.Context, userID string, amount int) error {
+	return b.rep.Withdraw(ctx, userID, amount)
 }

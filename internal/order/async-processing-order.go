@@ -1,20 +1,21 @@
 package order
 
-type AsyncProcessingOrder struct {
-	service *orderService
+import "context"
+
+type AsyncProcessingOrderService struct {
+	service *OrderService
 	pool    *WorkerPool
 }
 
-func NewAsyncProcessingOrder(service *orderService, pool *WorkerPool) *AsyncProcessingOrder {
-	return &AsyncProcessingOrder{
+func NewAsyncProcessingOrderService(service *OrderService, pool *WorkerPool) *AsyncProcessingOrderService {
+	return &AsyncProcessingOrderService{
 		service: service,
 		pool:    pool,
 	}
 }
 
-func (a *AsyncProcessingOrder) CreateOrderAndAddQueue(userID, orderNumber string) error {
-
-	orderEntity, err := a.service.AddOrder(userID, orderNumber)
+func (a *AsyncProcessingOrderService) CreateOrderAndAddQueue(ctx context.Context, userID, orderNumber string) error {
+	orderEntity, err := a.service.AddOrder(ctx, userID, orderNumber)
 
 	if err != nil {
 		return err
