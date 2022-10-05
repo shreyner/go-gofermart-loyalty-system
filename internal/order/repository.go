@@ -16,25 +16,6 @@ func NewBalanceRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
-func (o *OrderRepository) InitSchema(ctx context.Context) error {
-	_, err := o.db.ExecContext(
-		ctx,
-		`
-			create table if not exists orders
-			(
-				id         uuid        default gen_random_uuid() not null constraint orders_pk unique primary key,
-				number     varchar                               not null constraint orders_number_uniqk unique,
-				status     varchar,
-				accrual    integer,
-				user_id    uuid                                  not null constraint orders_users_null_fk references users (id),
-				created_at timestamptz default current_timestamp
-			);
-		`,
-	)
-
-	return err
-}
-
 func (o *OrderRepository) GetOrdersByUser(ctx context.Context, userID string) ([]*OrderEntity, error) {
 	rows, err := o.db.QueryContext(
 		ctx,

@@ -19,22 +19,6 @@ func NewUserRepository(db *sql.DB) *userRepository {
 	}
 }
 
-func (u *userRepository) InitSchema(ctx context.Context) error {
-	_, err := u.db.ExecContext(
-		ctx,
-		`
-		create table if not exists users
-			(
-				id       uuid default gen_random_uuid() not null constraint users_pk unique primary key,
-				login    varchar                        not null unique,
-				password varchar                        not null
-			);
-		`,
-	)
-
-	return err
-}
-
 func (u *userRepository) Create(ctx context.Context, user *UserEntity) error {
 	row := u.db.QueryRowContext(
 		ctx,

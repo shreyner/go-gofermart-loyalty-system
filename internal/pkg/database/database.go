@@ -26,17 +26,3 @@ func New(dburi string) (*sql.DB, error) {
 
 	return db, nil
 }
-
-type InitializerSchema interface {
-	InitSchema(ctx context.Context) error
-}
-
-func InitSchemas(ctx context.Context, db *sql.DB, initialize ...InitializerSchema) error {
-	for _, initializerSchema := range initialize {
-		if err := initializerSchema.InitSchema(ctx); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}

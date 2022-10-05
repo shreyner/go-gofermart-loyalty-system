@@ -44,37 +44,13 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	orderRepository := order.NewBalanceRepository(db)
 	withdrawalRepository := withdrawal.NewWithdrawalRepository(log, db)
 
-	// Initialize DataBase schemas
-	log.Info("Start initialize database schemas ...")
-
-	err = database.InitSchemas(
-		context.Background(),
-		db,
-		userRepository,
-		balanceRepository,
-		orderRepository,
-		withdrawalRepository,
-	)
-
-	log.Info("Finish initialize database schemas")
-
 	if err != nil {
 		log.Fatal("Can't initialize db schema", zap.Error(err))
 
 		os.Exit(1)
 	}
 
-	//log.Info("Request test ...")
-	//
-	//log.Info(cfg.AccrualSystemAddress.String())
-	//
 	client := client_loyalty_points.NewAccrualClient(log, cfg.AccrualSystemAddress.String())
-	//
-	//response, err := client.GetOrder(context.Background(), "12345678903")
-	//log.Error("client err", zap.Error(err))
-	//fmt.Println(response)
-	//
-	//log.Info("Request test end ...")
 
 	// Services
 	userService := user.NewUserService(userRepository)

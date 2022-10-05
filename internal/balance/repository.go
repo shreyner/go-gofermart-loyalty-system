@@ -16,23 +16,6 @@ func NewBalanceRepository(db *sql.DB) *balanceRepository {
 	return &balanceRepository{db: db}
 }
 
-func (b *balanceRepository) InitSchema(ctx context.Context) error {
-	_, err := b.db.ExecContext(
-		ctx,
-		`
-			create table if not exists balances
-			(
-				user_id    uuid constraint balances_pk unique constraint balances_users_null_fk references users (id),
-				current    integer default 0,
-				withdrawal integer default 0,
-				created_at timestamptz default current_timestamp not null
-			);
-		`,
-	)
-
-	return err
-}
-
 func (b *balanceRepository) Create(ctx context.Context, userID string) error {
 	_, err := b.db.ExecContext(
 		ctx,
