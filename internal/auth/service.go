@@ -1,32 +1,25 @@
 package auth
 
 import (
-	userType "go-gofermart-loyalty-system/internal/user"
+	"context"
+	"go-gofermart-loyalty-system/internal/balance"
+	"go-gofermart-loyalty-system/internal/user"
 )
 
-type userService interface {
-	CreateUser(login, password string) (*userType.User, error)
-	FindAndVerifyPassword(login, password string) (*userType.User, error)
+type AuthService struct {
+	userService    *user.UserService
+	balanceService *balance.BalanceService
 }
 
-type balanceService interface {
-	CreateByUserID(userID string) error
-}
-
-type authService struct {
-	userService    userService
-	balanceService balanceService
-}
-
-func NewAuthService(userService userService, balanceService balanceService) *authService {
-	return &authService{
+func NewAuthService(userService *user.UserService, balanceService *balance.BalanceService) *AuthService {
+	return &AuthService{
 		userService:    userService,
 		balanceService: balanceService,
 	}
 }
 
-func (a *authService) RegistryByLogin(login, password string) (*userType.User, error) {
-	user, err := a.userService.CreateUser(login, password)
+func (a *AuthService) RegistryByLogin(ctx context.Context, login, password string) (*user.User, error) {
+	u, err := a.userService.CreateUser(ctx, login, password)
 
 	if err != nil {
 		return nil, err
@@ -34,19 +27,21 @@ func (a *authService) RegistryByLogin(login, password string) (*userType.User, e
 
 	// TODO: Как тут решить вопрос с транзакционностью?
 	// TODO: Подумать как ре организовать эту логку, так как при добавлении авторизации через Google, Yandex.ID будет дублирвоание логики
-	if err := a.balanceService.CreateByUserID(user.ID); err != nil {
-		return nil, err // TODO: Добавить свою ошибку
-	}
-
-	return user, nil
-}
-
-func (a *authService) Login(login, password string) (*userType.User, error) {
-	user, err := a.userService.FindAndVerifyPassword(login, password)
+	err = a.balanceService.CreateByUserID(ctx, u.ID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return user, err
+	return u, nil
+}
+
+func (a *AuthService) Login(ctx context.Context, login, password string) (*user.User, error) {
+	u, err := a.userService.FindAndVerifyPassword(ctx, login, password)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return u, err
 }

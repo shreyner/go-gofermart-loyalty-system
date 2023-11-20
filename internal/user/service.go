@@ -1,25 +1,27 @@
 package user
 
-import "errors"
+import (
+	"context"
+)
 
-type userService struct {
+type UserService struct {
 	rep *userRepository
 }
 
-func NewUserService(rep *userRepository) *userService {
-	return &userService{
+func NewUserService(rep *userRepository) *UserService {
+	return &UserService{
 		rep: rep,
 	}
 }
 
-func (u *userService) CreateUser(login, password string) (*User, error) {
+func (u *UserService) CreateUser(ctx context.Context, login, password string) (*User, error) {
 	userEntity := UserEntity{Login: login}
 
 	if err := userEntity.SetPassword(password); err != nil {
 		return nil, err
 	}
 
-	if err := u.rep.Create(userEntity); err != nil {
+	if err := u.rep.Create(ctx, &userEntity); err != nil {
 		return nil, err
 	}
 
@@ -28,15 +30,15 @@ func (u *userService) CreateUser(login, password string) (*User, error) {
 	return user, nil
 }
 
-func (u *userService) FindAndVerifyPassword(login, password string) (*User, error) {
-	userEntity := u.rep.FindByLogin(login)
+func (u *UserService) FindAndVerifyPassword(ctx context.Context, login, password string) (*User, error) {
+	userEntity, err := u.rep.FindByLogin(ctx, login)
 
-	if userEntity == nil {
-		return nil, errors.New("user not found")
+	if err != nil {
+		return nil, err
 	}
 
-	if valid := userEntity.VerifyPassword(password); valid == false {
-		return nil, errors.New("password incorrect")
+	if valid := userEntity.VerifyPassword(password); !valid {
+		return nil, ErrUserPasswordIncorrect
 	}
 
 	return CreateUserFromEntity(userEntity), nil

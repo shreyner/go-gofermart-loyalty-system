@@ -23,3 +23,20 @@ git fetch template && git checkout template/master .github
 ```
 
 Затем добавьте полученные изменения в свой репозиторий.
+
+https://github.com/jackc/tern
+
+up
+```shell
+tern migrate -m migrate
+```
+
+down
+```shell
+tern migrate --destination -1 -m migrate
+```
+
+create
+```shell
+tern new user-and-add -m migrate
+```

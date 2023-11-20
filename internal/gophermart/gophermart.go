@@ -3,21 +3,21 @@ package gophermart
 import (
 	"context"
 	"database/sql"
-	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/client-loyalty-points"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"go.uber.org/zap"
 
 	"go-gofermart-loyalty-system/internal/auth"
 	"go-gofermart-loyalty-system/internal/balance"
 	"go-gofermart-loyalty-system/internal/config"
 	"go-gofermart-loyalty-system/internal/order"
+	client_loyalty_points "go-gofermart-loyalty-system/internal/pkg/accrualclient"
 	"go-gofermart-loyalty-system/internal/pkg/database"
 	"go-gofermart-loyalty-system/internal/pkg/httpserver"
 	"go-gofermart-loyalty-system/internal/router"
 	"go-gofermart-loyalty-system/internal/user"
+	"go-gofermart-loyalty-system/internal/withdrawal"
 )
 
 func Run(log *zap.Logger, cfg *config.Config) {
@@ -42,23 +42,42 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	userRepository := user.NewUserRepository(db)
 	balanceRepository := balance.NewBalanceRepository(db)
 	orderRepository := order.NewBalanceRepository(db)
+	withdrawalRepository := withdrawal.NewWithdrawalRepository(log, db)
+
+	if err != nil {
+		log.Fatal("Can't initialize db schema", zap.Error(err))
+
+		os.Exit(1)
+	}
+
+	client := client_loyalty_points.NewAccrualClient(log, cfg.AccrualSystemAddress.String())
 
 	// Services
 	userService := user.NewUserService(userRepository)
 	balanceService := balance.NewBalanceService(balanceRepository)
 	orderService := order.NewOrderService(orderRepository)
 	authService := auth.NewAuthService(userService, balanceService)
+	withdrawalService := withdrawal.NewWithdrawalService(log, withdrawalRepository, balanceService)
 
-	orderWorkerPool := order.NewWorkerPool(log, orderService, &client_loyalty_points.ClientLoyaltyPoints{}, 5)
-	// TODO: определить порядок defer. На случай завершения connection к базе раньше чем очистится очередь
-	defer orderWorkerPool.Stop()
-	asyncProcessingOrder := order.NewAsyncProcessingOrder(orderService, orderWorkerPool)
+	orderWorkerPool := order.NewWorkerPool(
+		log,
+		orderService,
+		balanceService,
+		client,
+		5,
+	)
+	asyncProcessingOrderService := order.NewAsyncProcessingOrderService(orderService, orderWorkerPool)
 
 	apiMux := router.New(
 		log,
+		authService,
+		balanceService,
+		withdrawalService,
+		orderService,
+		asyncProcessingOrderService,
 	)
 
-	apiServer := httpserver.NewHttpServer(log, apiMux, cfg.Address)
+	apiServer := httpserver.NewHTTPServer(log, apiMux, cfg.Address)
 	log.Info("Staring rest api server...")
 	apiServer.Start()
 
@@ -77,6 +96,8 @@ func Run(log *zap.Logger, cfg *config.Config) {
 	if err := apiServer.Stop(context.Background()); err != nil {
 		log.Error("Got an error while stopping th rest api server", zap.Error(err))
 	}
+
+	orderWorkerPool.Stop()
 
 	log.Info("The gophermart is calling the last defers and will be stopped.")
 }
